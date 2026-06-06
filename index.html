@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Registro de Clientes - Hotel</title>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --gold: #C9A961;
+  --gold-dark: #B89347;
+  --navy: #0A1628;
+  --navy-light: #1E293B;
+  --cream: #F8F5F0;
+  --white: #FFFFFF;
+  --success: #059669;
+  --danger: #DC2626;
+  --border: #E5E7EB;
+  --text: #1F2937;
+  --text-light: #6B7280;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Inter',sans-serif;background:linear-gradient(135deg, var(--cream) 0%, #E8DFD1 100%);color:var(--text);min-height:100vh}
+header{background:linear-gradient(135deg,var(--navy) 0%,var(--navy-light) 100%);color:var(--white);padding:2.5rem 1rem;text-align:center;box-shadow:0 4px 20px rgba(0,0,0,0.15);border-bottom:3px solid var(--gold)}
+header h1{font-family:'Playfair Display',serif;font-size:2.5rem;font-weight:700;letter-spacing:1px;margin-bottom:0.5rem}
+header p{font-size:1rem;opacity:0.9;color:var(--gold);font-weight:500;letter-spacing:2px;text-transform:uppercase}
+.container{max-width:1400px;margin:2rem auto;padding:0 1rem}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:1.5rem;margin-bottom:2rem}
+.stat-card{background:var(--white);padding:1.75rem;border-radius:16px;box-shadow:0 4px 12px rgba(0,0,0,0.08);border-left:4px solid var(--gold);transition:transform 0.2s}
+.stat-card:hover{transform:translateY(-2px)}
+.stat-card.label{font-size:0.875rem;color:var(--text-light);margin-bottom:0.5rem;text-transform:uppercase;letter-spacing:1px}
+.stat-card.value{font-size:2rem;font-weight:700;color:var(--navy);font-family:'Playfair Display',serif}
+.rooms-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:1.5rem;margin-bottom:2rem}
+.room-card{background:var(--white);border-radius:16px;padding:1.5rem;cursor:pointer;transition:all 0.3s;box-shadow:0 4px 12px rgba(0,0,0,0.08);border:2px solid transparent;position:relative;overflow:hidden}
+.room-card::before{content:'';position:absolute;top:0;left:0;right:0;height:6px;background:var(--success);transition:all 0.3s}
+.room-card.occupied::before{background:var(--danger)}
+.room-card:hover{transform:translateY(-4px);box-shadow:0 8px 24px rgba(0,0,0,0.12);border-color:var(--gold)}
+.room-card.occupied{border-color:#FEE2E2}
+.room-number{font-family:'Playfair Display',serif;font-size:1.75rem;font-weight:700;color:var(--navy);margin-bottom:0.5rem}
+.room-type{font-size:0.875rem;color:var(--text-light);margin-bottom:1rem;text-transform:uppercase;letter-spacing:0.5px}
+.room-status{display:inline-block;padding:0.4rem 0.875rem;border-radius:999px;font-size:0.75rem;font-weight:600;text-transform:uppercase;letter-spacing:0.5px}
+.room-status.free{background:#D1FAE5;color:#065F46}
+.room-status.occupied{background:#FEE2E2;color:#991B1B}
+.room-guest{margin-top:1rem;padding-top:1rem;border-top:1px solid var(--border)}
+.room-guest-name{font-weight:600;color:var(--navy);margin-bottom:0.25rem}
+.room-guest-dates{font-size:0.8rem;color:var(--text-light)}
+.modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(10,22,40,0.85);backdrop-filter:blur(4px);z-index:1000;overflow-y:auto}
+.modal.active{display:flex;align-items:center;justify-content:center;padding:1rem}
+.modal-content{background:var(--white);border-radius:20px;max-width:800px;width:100%;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.3)}
+.modal-header{background:linear-gradient(135deg,var(--navy) 0%,var(--navy-light) 100%);color:var(--white);padding:2rem;border-radius:20px 20px 0 0;border-bottom:3px solid var(--gold)}
+.modal-header h2{font-family:'Playfair Display',serif;font-size:1.75rem;margin-bottom:0.5rem}
+.modal-header p{color:var(--gold);font-size:0.9rem}
+.modal-body{padding:2rem}
+.form-grid{display:grid;gap:1.25rem}
+.form-grid-2{grid-template-columns:repeat(auto-fit,minmax(250px,1fr))}
+.form-group{display:flex;flex-direction:column;gap:0.5rem}
+label{font-weight:600;font-size:0.875rem;color:var(--navy)}
+input,select,textarea{padding:0.75rem 1rem;border:2px solid var(--border);border-radius:10px;font-size:0.95rem;font-family:inherit;transition:all 0.2s}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--gold);box-shadow:0 0 0 3px rgba(201,169,97,0.1)}
+.btn{padding:0.75rem 1.5rem;border:none;border-radius:10px;font-weight:600;cursor:pointer;transition:all 0.2s;font-size:0.95rem;display:inline-flex;align-items:center;gap:0.5rem;font-family:inherit}
+.btn-primary{background:linear-gradient(135deg,var(--gold) 0%,var(--gold-dark) 100%);color:var(--navy)}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(201,169,97,0.4)}
+.btn-danger{background:var(--danger);color:#fff}
+.btn-outline{background:transparent;border:2px solid var(--border);color:var(--text)}
+.btn-outline:hover{border-color:var(--gold);color:var(--gold)}
+.btn-sm{padding:0.5rem 1rem;font-size:0.85rem}
+.modal-footer{display:flex;gap:0.75rem;padding:1.5rem 2rem;background:var(--cream);border-radius:0 0 20px 20px}
+.section-title{font-family:'Playfair Display',serif;font-size:1.25rem;color:var(--navy);margin:1.5rem 0 1rem;padding-bottom:0.5rem;border-bottom:2px solid var(--gold)}
+.minibar-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:0.75rem}
+.minibar-item{background:var(--cream);padding:0.75rem;border-radius:8px;display:flex;justify-content:space-between;align-items:center;border:1px solid var(--border)}
+.minibar-item-info{flex:1}
+.minibar-item-name{font-weight:600;font-size:0.875rem;color:var(--navy)}
+.minibar-item-price{font-size:0.8rem;color:var(--text-light)}
+.minibar-item-qty{display:flex;align-items:center;gap:0.5rem}
+.minibar-item-qty button{width:28px;height:28px;border:none;background:var(--gold);color:var(--navy);border-radius:6px;cursor:pointer;font-weight:700}
+.minibar-item-qty button:hover{background:var(--gold-dark)}
+.minibar-item-qty span{min-width:20px;text-align:center;font-weight:600}
+.total-box{background:linear-gradient(135deg,var(--navy) 0%,var(--navy-light) 100%);color:var(--white);padding:1.5rem;border-radius:12px;margin-top:1.5rem}
+.total-row{display:flex;justify-content:space-between;margin-bottom:0.5rem}
+.total-row.final{font-size:1.25rem;font-weight:700;color:var(--gold);padding-top:0.75rem;border-top:1px solid rgba(201,169,97,0.3);margin-top:0.75rem}
+.close-modal{position:absolute;top:1rem;right:1rem;background:rgba(255,255,255,0.2);border:none;color:#fff;width:36px;height:36px;border-radius:50%;cursor:pointer;font-size:1.25rem;display:flex;align-items:center;justify-content:center}
+.close-modal:hover{background:rgba(255,255,255,0.3)}
+.header-actions{margin-top:1.5rem}
+@media (max-width:768px){
+header h1{font-size:1.75rem}
+.rooms-grid{grid-template-columns:repeat(auto-fill,minmax(160px,1fr))}
+.modal-content{margin:1rem}
+}
+</style>
+</head>
+<body>
+<header>
+  <h1>REGISTRO DE CLIENTES DE HOTEL</h1>
+  <p>Hecho por ERICK</p>
+  <div class="header-actions">
+    <button class="btn btn-primary" onclick="descargarHistorialCompleto()">📥 Descargar Historial Completo</button>
+  </div>
+</header>
+
+<div class="container">
+  <div class="stats">
+    <div class="stat-card">
+      <div class="label">Total Habitaciones</div>
+      <div class="value">20</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">Ocupadas</div>
+      <div class="value" id="statOcupadas">0</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">Disponibles</div>
+      <div class="value" id="statDisponibles">20</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">Ingresos Estimados</div>
+      <div class="value" id="statIngresos">S/ 0</div>
+    </div>
+  </div>
+
+  <div class="rooms-grid" id="roomsGrid"></div>
+</div>
+
+<!-- Modal -->
+<div class="modal" id="roomModal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <button class="close-modal" onclick="closeModal()">✕</button>
+      <h2 id="modalTitle">Habitación 101</h2>
+      <p id="modalSubtitle">Registro de Huésped</p>
+    </div>
+    <div class="modal-body">
+      <form id="guestForm">
+        <input type="hidden" id="roomId">
+        <div class="form-grid form-grid-2">
+          <div class="form-group">
+            <label>Nombre Completo *</label>
+            <input type="text" id="guestName" required placeholder="Juan Pérez">
+          </div>
+          <div class="form-group">
+            <label>DNI / Pasaporte *</label>
+            <input type="text" id="guestDNI" required placeholder="12345678">
+          </div>
+          <div class="form-group">
+            <label>Teléfono *</label>
+            <input type="tel" id="guestPhone" required placeholder="987654321">
+          </div>
+          <div class="form-group">
+            <label>Email</label>
+            <input type="email" id="guestEmail" placeholder="correo@ejemplo.com">
+          </div>
+          <div class="form-group">
+            <label>Fecha Check-in *</label>
+            <input type="date" id="checkIn" required>
+          </div>
+          <div class="form-group">
+            <label>Fecha Check-out *</label>
+            <input type="date" id="checkOut" required>
+          </div>
+          <div class="form-group">
+            <label>Tipo de Habitación *</label>
+            <select id="roomType" required onchange="updateRoomPrice()">
+              <option value="">Seleccionar</option>
+              <option value="Simple" data-price="180">Simple - S/ 180/noche</option>
+              <option value="Doble" data-price="250">Doble - S/ 250/noche</option>
+              <option value="Matrimonial" data-price="320">Matrimonial - S/ 320/noche</option>
+              <option value="Suite Pijamada" data-price="450">Suite Pijamada - S/ 450/noche</option>
+              <option value="Suite Luna de Miel" data-price="680">Suite Luna de Miel - S/ 680/noche</option>
+              <option value="Presidencial" data-price="1200">Presidencial - S/ 1200/noche</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Precio por Noche (S/.) *</label>
+            <input type="number" id="roomPrice" required step="0.01" min="0" readonly>
+          </div>
+        </div>
+
+        <div class="section-title">🍷 Minibar & Consumos</div>
+        <div class="minibar-grid" id="minibarItems"></div>
+
+        <div class="total-box">
+          <div class="total-row">
+            <span>Subtotal Habitación:</span>
+            <span id="subtotalRoom">S/ 0.00</span>
+          </div>
+          <div class="total-row">
+            <span>Consumos Minibar:</span>
+            <span id="subtotalMinibar">S/ 0.00</span>
+          </div>
+          <div class="total-row final">
+            <span>TOTAL ESTIMADO:</span>
+            <span id="totalAmount">S/ 0.00</span>
+          </div>
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-primary" onclick="saveGuest()">💾 Guardar</button>
+      <button type="button" class="btn btn-danger" id="deleteBtn" onclick="deleteGuest()" style="display:none">🗑 Eliminar Huésped</button>
+      <button type="button" class="btn btn-outline" onclick="closeModal()">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const ROOM_TYPES = {
+  'Simple': 180,
+  'Doble': 250,
+  'Matrimonial': 320,
+  'Suite Pijamada': 450,
+  'Suite Luna de Miel': 680,
+  'Presidencial': 1200
+};
+
+const MINIBAR = [
+  {name: 'Coca Cola 500ml', price: 8},
+  {name: 'Inka Kola 500ml', price: 8},
+  {name: 'Agua San Mateo 625ml', price: 6},
+  {name: 'Agua Evian 750ml', price: 15},
+  {name: 'Red Bull', price: 12},
+  {name: 'Cerveza Cusqueña Dorada', price: 15},
+  {name: 'Cerveza Heineken', price: 18},
+  {name: 'Vino Tinto Intipalka Malbec', price: 85},
+  {name: 'Vino Blanco Tabernero Sauvignon', price: 75},
+  {name: 'Champagne Moët & Chandon', price: 450},
+  {name: 'Whisky Johnnie Walker Black', price: 180},
+  {name: 'Whisky Chivas Regal 12 años', price: 220},
+  {name: 'Ron Zacapa 23 años', price: 280},
+  {name: 'Vodka Grey Goose', price: 160},
+  {name: 'Gin Bombay Sapphire', price: 140},
+  {name: 'Pisco Queirolo Quebranta', price: 65},
+  {name: 'Pisco Santiago Queirolo', price: 85},
+  {name: 'Baileys Irish Cream', price: 95}
+];
+
+let rooms = Array.from({length: 20}, (_, i) => ({
+  id: i + 1,
+  number: 100 + i + 1,
+  type: null,
+  price: 0,
+  guest: null,
+  checkIn: null,
+  checkOut: null,
+  minibar: {}
+}));
+
+let historialHuespedes = [];
+
+// Cargar datos
+function loadData() {
+  const saved = localStorage.getItem('hotelRooms');
+  const savedHistorial = localStorage.getItem('hotelHistorial');
+  if (saved) {
+    rooms = JSON.parse(saved);
+  }
+  if (savedHistorial) {
+    historialHuespedes = JSON.parse(savedHistorial);
+  }
+  renderRooms();
+  updateStats();
+}
+
+// Guardar datos
+function saveData() {
+  localStorage.setItem('hotelRooms', JSON.stringify(rooms));
+  localStorage.setItem('hotelHistorial', JSON.stringify(historialHuespedes));
+  updateStats();
+}
+
+function renderRooms() {
+  const grid = document.getElementById('roomsGrid');
+  grid.innerHTML = rooms.map(room => `
+    <div class="room-card ${room.guest? 'occupied' : ''}" onclick="openRoom(${room.id})">
+      <div class="room-number">Hab. ${room.number}</div>
+      <div class="room-type">${room.type || 'Disponible'}</div>
+      <div class="room-status ${room.guest? 'occupied' : 'free'}">
+        ${room.guest? 'Ocupada' : 'Libre'}
+      </div>
+      ${room.guest? `
+        <div class="room-guest">
+          <div class="room-guest-name">${room.guest.name}</div>
+          <div class="room-guest-dates">${formatDate(room.checkIn)} - ${formatDate(room.checkOut)}</div>
+        </div>
+      ` : ''}
+    </div>
+  `).join('');
+}
+
+function updateStats() {
+  const ocupadas = rooms.filter(r => r.guest).length;
+  const ingresos = rooms.reduce((sum, r) => {
+    if (!r.guest) return sum;
+    const nights = getNights(r.checkIn, r.checkOut);
+    const roomTotal = r.price * nights;
+    const minibarTotal = Object.entries(r.minibar || {}).reduce((s, [name, qty]) => {
+      const item = MINIBAR.find(m => m.name === name);
+      return s + (item? item.price * qty : 0);
+    }, 0);
+    return sum + roomTotal + minibarTotal;
+  }, 0);
+
+  document.getElementById('statOcupadas').textContent = ocupadas;
+  document.getElementById('statDisponibles').textContent = 20 - ocupadas;
+  document.getElementById('statIngresos').textContent = `S/ ${ingresos.toFixed(2)}`;
+}
+
+function getNights(checkIn, checkOut) {
+  const d1 = new Date(checkIn);
+  const d2 = new Date(checkOut);
+  const diff = (d2 - d1) / (1000 * 60 * 60 * 24);
+  return Math.max(1, Math.ceil(diff));
+}
+
+function formatDate(dateStr) {
+  const d = new Date(dateStr + 'T00:00:00');
+  return d.toLocaleDateString('es-PE', {day: '2-digit', month: 'short'});
+}
+
+function openRoom(roomId) {
+  const room = rooms.find(r => r.id === roomId);
+  document.getElementById('roomId').value = roomId;
+  document.getElementById('modalTitle').textContent = `Habitación ${room.number}`;
+  document.getElementById('modalSubtitle').textContent = room.guest? 'Editar Huésped' : 'Nuevo Huésped';
+  document.getElementById('deleteBtn').style.display = room.guest? 'inline-flex' : 'none';
+
+  if (room.guest) {
+    document.getElementById('guestName').value = room.guest.name || '';
+    document.getElementById('guestDNI').value = room.guest.dni || '';
+    document.getElementById('guestPhone').value = room.guest.phone || '';
+    document.getElementById('guestEmail').value = room.guest.email || '';
+    document.getElementById('checkIn').value = room.checkIn || '';
+    document.getElementById('checkOut').value = room.checkOut || '';
+    document.getElementById('roomType').value = room.type || '';
+    document.getElementById('roomPrice').value = room.price || '';
+  } else {
+    document.getElementById('guestForm').reset();
+    document.getElementById('checkIn').value = new Date().toISOString().split('T')[0];
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    document.getElementById('checkOut').value = tomorrow.toISOString().split('T')[0];
+  }
+
+  renderMinibar(room.minibar || {});
+  calculateTotal();
+  document.getElementById('roomModal').classList.add('active');
+}
+
+function closeModal() {
+  document.getElementById('roomModal').classList.remove('active');
+  document.getElementById('guestForm').reset();
+}
+
+function updateRoomPrice() {
+  const select = document.getElementById('roomType');
+  const price = select.selectedOptions[0]?.dataset.price || 0;
+  document.getElementById('roomPrice').value = price;
+  calculateTotal();
+}
+
+function renderMinibar(minibarData) {
+  const container = document.getElementById('minibarItems');
+  container.innerHTML = MINIBAR.map(item => {
+    const qty = minibarData[item.name] || 0;
+    return `
+      <div class="minibar-item">
+        <div class="minibar-item-info">
+          <div class="minibar-item-name">${item.name}</div>
+          <div class="minibar-item-price">S/ ${item.price}</div>
+        </div>
+        <div class="minibar-item-qty">
+          <button type="button" onclick="updateMinibarQty('${item.name}', -1)">−</button>
+          <span id="qty-${item.name.replace(/\s+/g, '-')}">${qty}</span>
+          <button type="button" onclick="updateMinibarQty('${item.name}', 1)">+</button>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function updateMinibarQty(itemName, delta) {
+  const roomId = parseInt(document.getElementById('roomId').value);
+  const room = rooms.find(r => r.id === roomId);
+  if (!room.minibar) room.minibar = {};
+
+  const current = room.minibar[itemName] || 0;
+  const newQty = Math.max(0, current + delta);
+
+  if (newQty === 0) {
+    delete room.minibar[itemName];
+  } else {
+    room.minibar[itemName] = newQty;
+  }
+
+  document.getElementById(`qty-${itemName.replace(/\s+/g, '-')}`).textContent = newQty;
+  calculateTotal();
+}
+
+function calculateTotal() {
+  const price = parseFloat(document.getElementById('roomPrice').value) || 0;
+  const checkIn = document.getElementById('checkIn').value;
+  const checkOut = document.getElementById('checkOut').value;
+
+  let nights = 1;
+  if (checkIn && checkOut) {
+    nights = getNights(checkIn, checkOut);
+  }
+
+  const roomTotal = price * nights;
+
+  const roomId = parseInt(document.getElementById('roomId').value);
+  const room = rooms.find(r => r.id === roomId);
+  const minibarTotal = Object.entries(room?.minibar || {}).reduce((sum, [name, qty]) => {
+    const item = MINIBAR.find(m => m.name === name);
+    return sum + (item? item.price * qty : 0);
+  }, 0);
+
+  document.getElementById('subtotalRoom').textContent = `S/ ${roomTotal.toFixed(2)}`;
+  document.getElementById('subtotalMinibar').textContent = `S/ ${minibarTotal.toFixed(2)}`;
+  document.getElementById('totalAmount').textContent = `S/ ${(roomTotal + minibarTotal).toFixed(2)}`;
+
+  return {roomTotal, minibarTotal, total: roomTotal + minibarTotal, nights};
+}
+
+document.getElementById('checkIn').addEventListener('change', calculateTotal);
+document.getElementById('checkOut').addEventListener('change', calculateTotal);
+
+function saveGuest() {
+  const roomId = parseInt(document.getElementById('roomId').value);
+  const room = rooms.find(r => r.id === roomId);
+  const esNuevoRegistro =!room.guest;
+
+  const guest = {
+    name: document.getElementById('guestName').value,
+    dni: document.getElementById('guestDNI').value,
+    phone: document.getElementById('guestPhone').value,
+    email: document.getElementById('guestEmail').value
+  };
+
+  if (!guest.name ||!guest.dni ||!guest.phone) {
+    Swal.fire('Error', 'Completa los campos obligatorios', 'error');
+    return;
+  }
+
+  room.guest = guest;
+  room.checkIn = document.getElementById('checkIn').value;
+  room.checkOut = document.getElementById('checkOut').value;
+  room.type = document.getElementById('roomType').value;
+  room.price = parseFloat(document.getElementById('roomPrice').value);
+
+  const {roomTotal, minibarTotal, total, nights} = calculateTotal();
+
+  // Solo si es nuevo registro, agregamos al historial
+  if (esNuevoRegistro) {
+    const registroHistorial = {
+      fechaRegistro: new Date().toISOString(),
+      habitacion: room.number,
+      nombreCompleto: guest.name,
+      dniPasaporte: guest.dni,
+      telefono: guest.phone,
+      email: guest.email || 'N/A',
+      checkIn: room.checkIn,
+      checkOut: room.checkOut,
+      noches: nights,
+      tipoHabitacion: room.type,
+      precioNoche: room.price,
+      subtotalHabitacion: roomTotal,
+      consumosMinibar: {...room.minibar},
+      detalleMinibar: Object.entries(room.minibar || {}).map(([item, qty]) => {
+        const producto = MINIBAR.find(m => m.name === item);
+        return `${item} x${qty} = S/ ${(producto.price * qty).toFixed(2)}`;
+      }).join('; ') || 'Sin consumos',
+      subtotalMinibar: minibarTotal,
+      totalEstimado: total
+    };
+
+    historialHuespedes.push(registroHistorial);
+  }
+
+  saveData();
+  renderRooms();
+  closeModal();
+  Swal.fire('¡Listo!', esNuevoRegistro? 'Huésped registrado en el historial' : 'Huésped actualizado', 'success');
+}
+
+function deleteGuest() {
+  Swal.fire({
+    title: '¿Eliminar huésped?',
+    text: 'La habitación quedará disponible',
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonText: 'Sí, eliminar',
+    cancelButtonText: 'Cancelar'
+  }).then((result) => {
+    if (result.isConfirmed) {
+      const roomId = parseInt(document.getElementById('roomId').value);
+      const room = rooms.find(r => r.id === roomId);
+      room.guest = null;
+      room.checkIn = null;
+      room.checkOut = null;
+      room.type = null;
+      room.price = 0;
+      room.minibar = {};
+      saveData();
+      renderRooms();
+      closeModal();
+      Swal.fire('Eliminado', 'La habitación está libre', 'success');
+    }
+  });
+}
+
+// Descarga historial completo
+function descargarHistorialCompleto() {
+  if (historialHuespedes.length === 0) {
+    Swal.fire('Sin datos', 'Aún no hay huéspedes registrados en el historial', 'info');
+    return;
+  }
+
+  const data = historialHuespedes.map(r => ({
+    'Fecha de Registro': new Date(r.fechaRegistro).toLocaleString('es-PE'),
+    'Habitación': r.habitacion,
+    'Nombre Completo': r.nombreCompleto,
+    'DNI/Pasaporte': r.dniPasaporte,
+    'Teléfono': r.telefono,
+    'Gmail/Email': r.email,
+    'Check-In': r.checkIn,
+    'Check-Out': r.checkOut,
+    'Noches': r.noches,
+    'Tipo de Habitación': r.tipoHabitacion,
+    'Precio por Noche (S/)': r.precioNoche,
+    'Subtotal Habitación (S/)': r.subtotalHabitacion,
+    'Detalle Minibar': r.detalleMinibar,
+    'Subtotal Minibar (S/)': r.subtotalMinibar,
+    'TOTAL ESTIMADO (S/)': r.totalEstimado
+  }));
+
+  const ws = XLSX.utils.json_to_sheet(data);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Historial Completo');
+
+  const fechaHoy = new Date().toISOString().split('T')[0];
+  XLSX.writeFile(wb, `Historial_Hotel_Completo_${fechaHoy}.xlsx`);
+}
+
+// Init
+loadData();
+</script>
+</body>
+</html>
